@@ -5,6 +5,8 @@ from wakeonlan import send_magic_packet
 from os import system
 import paho.mqtt.client as mqtt
 import sys
+import time
+import threading
 
 def startserver():
     print("Starting Server", file=sys.stderr)
@@ -43,14 +45,21 @@ def on_message(client: mqtt.Client, userdata: str, message):
 
     if message.payload == b'ON':
         startserver()
-        status_update(client, 'ON')
     else:
         stopserver()
-        status_update(client, 'OFF')
 
 
-def status_update(client, state='OFF'):
-    client.publish("ServerRoom/server/state", payload=state, retain=True, qos=0)
+def status_update(client):
+    while True:
+        server_up = True if system('ping -c 1 192.168.1.150 2>&1 >/dev/null') == 0 else False
+        if server_up:
+            client.publish("ServerRoom/server/state", payload='ON', retain=True, qos=0)
+            print("Server is: ON", file=sys.stderr)
+        else:
+            client.publish("ServerRoom/server/state", payload='OFF', retain=True, qos=0)
+            print("Server is: OFF", file=sys.stderr)
+
+        time.sleep(1)
 
 
 def register(client):
@@ -72,12 +81,12 @@ def register(client):
     client.publish("homeassistant/switch/ServerRoom/server/config", payload=config, retain=True, qos=0)
     client.on_message = on_message
     client.subscribe("ServerRoom/server/set")
-    status_update(client, 'OFF')
-
 
 
 if __name__ == '__main__':
     client = mqtt.Client(client_id="server_manager")
     client.connect('192.168.1.100')
     register(client)
+
+    threading.Thread(target=status_update, args=(client,)).start()
     client.loop_forever()

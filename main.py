@@ -7,6 +7,7 @@ import paho.mqtt.client as mqtt
 import sys
 import time
 import threading
+from datetime import datetime
 
 def startserver():
     print("Starting Server", file=sys.stderr)
@@ -35,7 +36,7 @@ def stopserver():
 
 
 def on_message(client: mqtt.Client, userdata: str, message):
-    print(f'{client} - {userdata} - {message}')
+    print(f'{datetime.now()} - {client} - {userdata} - {message}', file=sys.stderr)
     
     if message.topic == 'homeassistant/status' and message.payload == 'online':
         register(client)

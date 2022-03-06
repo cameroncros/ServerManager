@@ -3,6 +3,7 @@ import sys
 from datetime import datetime
 
 from ServerManager import ServerManager
+from TVManager import TVManager
 
 
 def on_message(client: mqtt.Client, userdata: str, message):
@@ -20,5 +21,6 @@ if __name__ == '__main__':
     mqttclient = mqtt.Client(client_id="server_manager")
     mqttclient.connect('192.168.1.100')
     mqttclient.on_message = on_message
-    plugins = [ServerManager(mqttclient, name="server", room="ServerRoom")]
+    plugins = [ServerManager(mqttclient, name="Server", room="ServerRoom"),
+               TVManager(mqttclient, name='TV', room="LivingRoom")]
     mqttclient.loop_forever()

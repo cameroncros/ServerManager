@@ -1,0 +1,10 @@
+version: "3"
+services:
+  server_manager:
+    container_name: server_manager
+    image: server_manager
+    network_mode: host
+    restart: always
+    volumes:
+      - ./id_rsa:/app/id_rsa
+      - ./tv.crt:/app/tv.crt

@@ -1,5 +1,6 @@
 import json
 import threading
+import time
 from abc import ABC, abstractmethod
 from paho.mqtt.client import Client
 
@@ -38,9 +39,8 @@ class AbstractSwitch(ABC):
             self.stop()
 
     def register(self):
-        self.set_state(on=False)
         config = json.dumps(
-            {'name': 'Server',
+            {'name': self.name,
              'command_topic': f"{self.room}/{self.name}/set",
              'state_topic': f"{self.room}/{self.name}/state",
              'state_on': 'ON',
@@ -57,3 +57,5 @@ class AbstractSwitch(ABC):
              })
         self.client.publish(f"homeassistant/switch/{self.room}/{self.name}/config", payload=config, retain=False, qos=0)
         self.client.subscribe(f"{self.room}/{self.name}/set")
+        time.sleep(1)
+        self.set_state(on=True)

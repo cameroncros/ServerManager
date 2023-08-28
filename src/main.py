@@ -1,26 +1,34 @@
-import paho.mqtt.client as mqtt
-import sys
-from datetime import datetime
+import logging
+import os
+from time import sleep
+
+from ham import MqttManager
 
 from ServerManager import ServerManager
 from TVManager import TVManager
 
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
 
-def on_message(client: mqtt.Client, userdata: str, message):
-    print(f'{datetime.now()} - {client} - {userdata} - {message}', file=sys.stderr)
+    mqtt_serv = os.environ.get('MQTT_SERV')
+    mqtt_user = os.environ.get('MQTT_USER')
+    mqtt_pass = os.environ.get('MQTT_PASS')
 
-    if message.topic == 'homeassistant/status' and message.payload == 'online':
-        for plugin in plugins:
-            plugin.register()
+    server_switch = ServerManager()
+    tv_switch = TVManager()
+    manager = MqttManager(host=mqtt_serv,
+                          username=mqtt_user,
+                          password=mqtt_pass,
+                          name="server_manager",
+                          unique_identifier="server_manager",
+                          base_topic="server_manager",
+                          node_id="server_manager")
+    manager.add_things([server_switch, tv_switch])
 
-    for plugin in plugins:
-        plugin.on_message(message.topic, message.payload)
+    manager.start()
 
-
-if __name__ == '__main__':
-    mqttclient = mqtt.Client(client_id="server_manager")
-    mqttclient.connect('192.168.1.100')
-    mqttclient.on_message = on_message
-    plugins = [ServerManager(mqttclient, name="Server", room="ServerRoom"),
-               TVManager(mqttclient, name='TV', room="LivingRoom")]
-    mqttclient.loop_forever()
+    print("Entering an infinite loop, Ctrl+C multiple times to exit.")
+    while True:
+        server_switch.status_update()
+        tv_switch.status_update()
+        sleep(1)

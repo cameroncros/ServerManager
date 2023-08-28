@@ -1,28 +1,34 @@
+import os
 import sys
-import time
-from os import system
 
+from ham.switch import ExplicitSwitch
 from wakeonlan import send_magic_packet
-
-from AbstractSwitch import AbstractSwitch
 import paho.mqtt.client as mqtt
 
 
 # Debugging: mosquitto_sub -h 192.168.1.152 -p 36669 -P multimqttservice -u hisenseservice -t "#" --insecure --cafile /etc/mosquitto/tv.crt -v
-class TVManager(AbstractSwitch):
-    tv_mac = '10:C7:53:E0:0E:F8'
+class TVManager(ExplicitSwitch):
+    name = "TV Switch"
+    short_id = "tv_switch"
 
-    def start(self):
-        print("Starting TV", file=sys.stderr)
-        send_magic_packet(self.tv_mac.replace(':', ''))
+    tv_mac = os.environ.get('TV_MAC').replace(':', '')
+    tv_addr = os.environ.get('TV_ADDR')
 
-    @staticmethod
-    def _connect_tv() -> mqtt.Client:
+    def callback(self, state: bool):
+        super().callback(state)
+        if state:
+            print("Starting TV", file=sys.stderr)
+            send_magic_packet(self.tv_mac)
+        else:
+            print("Stopping TV", file=sys.stderr)
+            self.stop()
+
+    def _connect_tv(self) -> mqtt.Client:
         tvmqttclient = mqtt.Client(client_id="hisenseservice")
         tvmqttclient.username_pw_set('hisenseservice', 'multimqttservice')
         tvmqttclient.tls_set(ca_certs='tv.crt')
         tvmqttclient.tls_insecure_set(True)
-        tvmqttclient.connect('192.168.1.152', 36669)
+        tvmqttclient.connect(self.tv_addr, 36669)
         return tvmqttclient
 
     def stop(self):
@@ -37,14 +43,9 @@ class TVManager(AbstractSwitch):
             print(f'Failed to stop TV: {e}', file=sys.stderr)
 
     def status_update(self):
-        while True:
-            try:
-                connection = self._connect_tv()
-                print("TV is: ON", file=sys.stderr)
-                self.set_state(on=True)
-                connection.disconnect()
-            except Exception:
-                print("TV is: OFF", file=sys.stderr)
-                self.set_state(on=False)
-
-            time.sleep(1)
+        try:
+            connection = self._connect_tv()
+            self.state = True
+            connection.disconnect()
+        except Exception:
+            self.state = False

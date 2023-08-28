@@ -5,6 +5,16 @@ services:
     image: server_manager
     network_mode: host
     restart: always
+    environment:
+      MQTT_SERV: 192.168.1.105
+      MQTT_USER: mqttuser
+      MQTT_PASS: Uk8mUN53JwJDc2
+
+      TV_MAC: 10:C7:53:E0:0E:F8
+      TV_ADDR: 192.168.1.152
+
+      SERVER_MAC: 50:65:f3:34:6c:a6
+      SERVER_ADDR: 192.168.1.150
     volumes:
       - ./id_rsa:/app/id_rsa
       - ./tv.crt:/app/tv.crt

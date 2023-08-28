@@ -1,29 +1,25 @@
 import sys
-import time
+import os
 from os import system
 
+from ham.switch import ExplicitSwitch
 from wakeonlan import send_magic_packet
 
-from AbstractSwitch import AbstractSwitch
 
+class ServerManager(ExplicitSwitch):
+    name = "Server Switch"
+    short_id = "server_switch"
+    server_mac = os.environ.get('SERVER_MAC').replace(':', '')
+    server_addr = os.environ.get('SERVER_ADDR')
 
-class ServerManager(AbstractSwitch):
-
-    def start(self):
-        print("Starting Server", file=sys.stderr)
-        send_magic_packet('5065f3346ca6')
-
-    def stop(self):
-        print("Stopping Server", file=sys.stderr)
-        system('ssh -o StrictHostKeyChecking=no -i /app/id_rsa shutdown@192.168.1.150 "sudo shutdown"')
+    def callback(self, state: bool):
+        super().callback(state)
+        if state:
+            print("Starting Server", file=sys.stderr)
+            send_magic_packet(self.server_mac)
+        else:
+            print("Stopping Server", file=sys.stderr)
+            system(f'ssh -o StrictHostKeyChecking=no -i /app/id_rsa shutdown@{self.server_addr} "sudo shutdown"')
 
     def status_update(self):
-        while True:
-            server_up = True if system('ping -c 1 192.168.1.150 2>&1 >/dev/null') == 0 else False
-            self.set_state(on=server_up)
-            if server_up:
-                print("Server is: ON", file=sys.stderr)
-            else:
-                print("Server is: OFF", file=sys.stderr)
-
-            time.sleep(1)
+        self.state = True if system(f'ping -c 1 {self.server_addr} 2>&1 >/dev/null') == 0 else False

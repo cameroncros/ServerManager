@@ -1,14 +1,14 @@
 import sys
 import os
 from os import system
-
-from ham.switch import ExplicitSwitch
+from ExplicitSwitchDeviceInfo import ExplicitSwitchDeviceInfo
 from wakeonlan import send_magic_packet
 
 
-class ServerManager(ExplicitSwitch):
+class ServerManager(ExplicitSwitchDeviceInfo):
     name = "Server Switch"
     short_id = "server_switch"
+    location = "Server Room"
     server_mac = os.environ.get('SERVER_MAC').replace(':', '')
     server_addr = os.environ.get('SERVER_ADDR')
 

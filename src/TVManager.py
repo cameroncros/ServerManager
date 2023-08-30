@@ -1,15 +1,17 @@
 import os
 import sys
 
-from ham.switch import ExplicitSwitch
 from wakeonlan import send_magic_packet
 import paho.mqtt.client as mqtt
 
+from ExplicitSwitchDeviceInfo import ExplicitSwitchDeviceInfo
+
 
 # Debugging: mosquitto_sub -h 192.168.1.152 -p 36669 -P multimqttservice -u hisenseservice -t "#" --insecure --cafile /etc/mosquitto/tv.crt -v
-class TVManager(ExplicitSwitch):
+class TVManager(ExplicitSwitchDeviceInfo):
     name = "TV Switch"
     short_id = "tv_switch"
+    location = "Living Room"
 
     tv_mac = os.environ.get('TV_MAC').replace(':', '')
     tv_addr = os.environ.get('TV_ADDR')
